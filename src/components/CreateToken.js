@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Form, Button, Container, Row, Col } from 'react-bootstrap';
 
 const CreateToken = ({ walletId, onTokenCreated }) => {
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
   const [tokenId, setTokenId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleCreateToken = () => {
+  const handleCreateToken = async () => {
+    setLoading(true);
+    setError(null);
+
     const options = {
       method: 'POST',
       headers: {
@@ -16,44 +22,50 @@ const CreateToken = ({ walletId, onTokenCreated }) => {
       data: JSON.stringify({ name, symbol, type: 'fungible' }),
     };
 
-    axios('https://protocol-sandbox.lumx.io/v2/contracts', options)
-      .then(response => {
-        setTokenId(response.data.id);
-        onTokenCreated(response.data.id);
-      })
-      .catch(err => console.error(err));
+    try {
+      const response = await axios('https://protocol-sandbox.lumx.io/v2/contracts', options);
+      setTokenId(response.data.id);
+      onTokenCreated(response.data.id);
+    } catch (err) {
+      setError(err.response ? err.response.data : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <h3>Criar Token</h3>
-      <div>
-        <label>
-          Name:
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Nome do Token"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          Symbol:
-          <input
-            type="text"
-            value={symbol}
-            onChange={e => setSymbol(e.target.value)}
-            placeholder="Símbolo do Token"
-          />
-        </label>
-      </div>
-      <button onClick={handleCreateToken} disabled={!walletId || !name || !symbol}>
-        Criar Token
-      </button>
-      {tokenId && <p>Token ID: {tokenId}</p>}
-    </div>
+    <Container>
+      <Row className="justify-content-md-center">
+        <Col md="6">
+          <h3 className="text-center">Criar Token</h3>
+          <Form>
+            <Form.Group controlId="formTokenName">
+              <Form.Label>Name</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Nome do Token"
+                value={name}
+                onChange={e => setName(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group controlId="formTokenSymbol">
+              <Form.Label>Symbol</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Símbolo do Token"
+                value={symbol}
+                onChange={e => setSymbol(e.target.value)}
+              />
+            </Form.Group>
+            <Button variant="primary" onClick={handleCreateToken} disabled={!walletId || !name || !symbol || loading}>
+              {loading ? 'Creating...' : 'Criar Token'}
+            </Button>
+            {tokenId && <p className="mt-3">Token ID: {tokenId}</p>}
+            {error && <p className="mt-3 text-danger">Error: {error}</p>}
+          </Form>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 

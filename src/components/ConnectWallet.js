@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Button, Container, Row, Col } from 'react-bootstrap';
 
 const ConnectWallet = ({ onWalletCreated }) => {
   const [walletId, setWalletId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const connectWallet = () => {
+    setLoading(true);
+    setError(null);
+
     const options = {
       method: 'POST',
       headers: {
@@ -16,15 +22,33 @@ const ConnectWallet = ({ onWalletCreated }) => {
       .then(response => {
         setWalletId(response.data.id);
         onWalletCreated(response.data.id);
+        setLoading(false);
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error(err);
+        setError(err.response ? err.response.data : 'Unknown error');
+        setLoading(false);
+      });
   };
 
   return (
-    <div>
-      <button onClick={connectWallet}>Conectar Carteira</button>
-      {walletId && <p>Carteira ID: {walletId}</p>}
-    </div>
+    <Container>
+      <Row className="justify-content-md-center">
+        <Col md="6" className="text-center">
+          <h3>Conectar Carteira</h3>
+          <Button
+            variant="primary"
+            onClick={connectWallet}
+            disabled={loading}
+            style={{ marginTop: '20px', marginBottom: '20px' }}
+          >
+            {loading ? 'Conectando...' : 'Conectar Carteira'}
+          </Button>
+          {walletId && <p>Carteira ID: {walletId}</p>}
+          {error && <p className="text-danger">Error: {error}</p>}
+        </Col>
+      </Row>
+    </Container>
   );
 };
 
